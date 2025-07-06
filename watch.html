@@ -2,108 +2,184 @@
 <html lang="ar">
 <head>
   <meta charset="UTF-8" />
-  <title>مشاهدة جماعية مع الأصدقاء</title>
+  <title>مشاهدة جماعية | Tunflix</title>
   <style>
-    body {
-      margin: 0; padding: 0; background: #000; color: #fff; font-family: "Changa", sans-serif;
-      display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh;
-    }
-    video {
-      max-width: 90vw;
-      max-height: 80vh;
-      background: #000;
-    }
+    body { font-family: Arial, sans-serif; text-align: center; direction: rtl; }
+    video { width: 80%; max-width: 800px; margin-top: 20px; }
+    button { margin: 10px; padding: 10px 20px; }
   </style>
-
-  <!-- Firebase SDK (v8) -->
-  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
 </head>
 <body>
 
-  <h2>مشاهدة جماعية مع الأصدقاء</h2>
-  <video id="player" controls></video>
+  <h1>🎬 صفحة المشاهدة الجماعية</h1>
 
-  <script>
-    // تكوين Firebase الخاص بك
-    var firebaseConfig = {
+  <!-- مشغل الفيديو -->
+  <video id="videoPlayer" controls></video>
+
+  <!-- زر للمستضيف لتغيير الحلقة -->
+  <div id="hostControls">
+    <button id="nextEpisodeBtn">⬅️ الحلقة التالية</button>
+  </div>
+
+  <script type="module">
+    // ✅ بيانات الحلقات
+    const episodesData = [
+      id: 1,
+                title: "الحلقة 1",
+                baseURL: "https://video.wixstatic.com/video/a225c5_5be486adab444083b2323983d50c6efe/"
+            },
+            {
+                id: 2,
+                title: "الحلقة 2",
+                baseURL: "https://video.wixstatic.com/video/a225c5_a8805c5077e040ff85f935a3369364db/"
+            },
+            {
+                id: 3,
+                title: "الحلقة 3",
+                baseURL: "https://video.wixstatic.com/video/a225c5_33e21df5c0eb4565910ab444811127bc/"
+            },
+            {
+                id: 4,
+                title: "الحلقة 4",
+                baseURL: "https://video.wixstatic.com/video/a225c5_02e5b81878af4a67acb910870c2ba04e/"
+            },
+            {
+                id: 5,
+                title: "الحلقة 5",
+                baseURL: "https://video.wixstatic.com/video/a225c5_0bc2fafc235f47ddad2c158e308c5e32/"
+            },
+            {
+                id: 6,
+                title: "الحلقة 6 ",
+                baseURL: "https://video.wixstatic.com/video/a225c5_7d0de0cd771a4b93bced7c2e9f892f21/"
+         },
+          
+           {
+                id: 7,
+                title: "الحلقة 7 ",
+                baseURL: "https://video.wixstatic.com/video/a225c5_1d4b5b00855346468fdd30924155d32f/"
+          },
+             {
+                id: 8,
+                title: "الحلقة 8 ",
+                baseURL: "https://video.wixstatic.com/video/a225c5_41e3ee363e404859a32078355a333be4/"
+           },
+      
+       {
+                id: 9,
+                title: "الحلقة 9 ",
+                baseURL: "https://video.wixstatic.com/video/a225c5_3c8dfb5f9aa440dc816a1387e30c4bba/"
+          },
+      
+       {
+                id: 10,
+                title: "الحلقة 10 ",
+                baseURL: "https://video.wixstatic.com/video/a225c5_9ffccf7b0e4645aab85249b458a54162/"
+           },
+      
+       {
+                id: 11,
+                title: "الحلقة 11 ",
+                baseURL: "https://video.wixstatic.com/video/a225c5_4db82112a059421aabec23748da53abc/"
+          },
+      
+       {
+                id: 12,
+                title: "الحلقة 12 ",
+                baseURL: "https://video.wixstatic.com/video/a225c5_b78f6550286d4987bd819713492697f3/"
+            }
+       
+      // 🔑 أضف باقي الحلقات هنا حسب حاجتك
+    ];
+
+    // ✅ توليد رابط mp4 حسب الجودة
+    function generateVideoUrl(baseURL, quality) {
+      return `${baseURL}${quality}/mp4/file.mp4`;
+    }
+
+    // ✅ إعداد Firebase
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
+    import { getDatabase, ref, onValue, update } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
+
+    const firebaseConfig = {
       apiKey: "AIzaSyBNLxujMnCsvpsfzqqYMVR4l9dT4teu_b8",
       authDomain: "watch-together-fa628.firebaseapp.com",
       databaseURL: "https://watch-together-fa628-default-rtdb.europe-west1.firebasedatabase.app",
       projectId: "watch-together-fa628",
-      storageBucket: "watch-together-fa628.appspot.com",
+      storageBucket: "watch-together-fa628.firebasestorage.app",
       messagingSenderId: "472062861048",
       appId: "1:472062861048:web:3710c75f6b72fef138e50d"
     };
-    // تهيئة Firebase
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
+    const app = initializeApp(firebaseConfig);
+    const database = getDatabase(app);
 
-    // جلب بارامترات الرابط من URL (مثلاً ?room=abc123&video=رابط_الفيديو)
-    const params = new URLSearchParams(window.location.search);
-    const roomId = params.get('room');
-    const videoUrl = params.get('video');
+    // ✅ بيانات الغرفة من الرابط
+    const urlParams = new URLSearchParams(window.location.search);
+    const roomId = urlParams.get('room');
+    const isHost = urlParams.get('host') === 'true';
+    const roomRef = ref(database, `rooms/${roomId}`);
 
-    if (!roomId || !videoUrl) {
-      alert("الرابط ناقص! يجب أن يحتوي على room و video.");
-      throw new Error("Missing room or video parameter");
+    const video = document.getElementById('videoPlayer');
+    const nextEpisodeBtn = document.getElementById('nextEpisodeBtn');
+    const hostControls = document.getElementById('hostControls');
+
+    if (!isHost) {
+      hostControls.style.display = 'none'; // إخفاء أزرار المستضيف للمشاهدين
     }
 
-    const player = document.getElementById('player');
-    player.src = decodeURIComponent(videoUrl);
+    // ✅ المستضيف فقط: يرسل الحالة إلى Firebase
+    if (isHost) {
+      video.addEventListener("play", () => {
+        update(roomRef, { isPlaying: true });
+      });
 
-    const roomRef = db.ref('rooms/' + roomId);
+      video.addEventListener("pause", () => {
+        update(roomRef, { isPlaying: false });
+      });
 
-    // تحديث حالة التشغيل
-    player.addEventListener('play', () => {
-      roomRef.update({ isPlaying: true });
-    });
+      video.addEventListener("timeupdate", () => {
+        update(roomRef, { currentTime: video.currentTime });
+      });
 
-    player.addEventListener('pause', () => {
-      roomRef.update({ isPlaying: false });
-    });
+      nextEpisodeBtn.addEventListener("click", () => {
+        // مثال: الانتقال إلى الحلقة التالية
+        const newEpisodeId = prompt("أدخل رقم الحلقة الجديدة:", "2");
+        if (newEpisodeId) {
+          update(roomRef, {
+            currentEpisode: parseInt(newEpisodeId, 10),
+            currentTime: 0,
+            isPlaying: false
+          });
+        }
+      });
+    }
 
-    // تحديث الوقت الحالي (كل 1 ثانية تقريبًا لتقليل الضغط)
-    let isSeeking = false;
-    player.addEventListener('seeking', () => {
-      isSeeking = true;
-    });
-
-    player.addEventListener('seeked', () => {
-      roomRef.update({ currentTime: player.currentTime });
-      isSeeking = false;
-    });
-
-    player.addEventListener('timeupdate', () => {
-      if (!isSeeking) {
-        roomRef.update({ currentTime: player.currentTime });
-      }
-    });
-
-    // الاستماع لتحديثات الحالة من Firebase
-    roomRef.on('value', snapshot => {
+    // ✅ المشاهدون: يستمعون للتغييرات من Firebase
+    onValue(roomRef, (snapshot) => {
       const data = snapshot.val();
       if (!data) return;
 
-      // مزامنة التشغيل / الإيقاف
-      if (data.isPlaying !== undefined) {
-        if (data.isPlaying && player.paused) {
-          player.play();
-        } else if (!data.isPlaying && !player.paused) {
-          player.pause();
-        }
+      const episode = episodesData.find(ep => ep.id === data.currentEpisode);
+      if (!episode) return;
+
+      const videoUrl = generateVideoUrl(episode.baseURL, data.quality || "720p");
+
+      if (video.src !== videoUrl) {
+        video.src = videoUrl;
+        video.load();
       }
 
-      // مزامنة الوقت إذا الفارق أكبر من ثانية
-      if (data.currentTime !== undefined) {
-        const diff = Math.abs(player.currentTime - data.currentTime);
-        if (diff > 1) {
-          player.currentTime = data.currentTime;
-        }
+      if (Math.abs(video.currentTime - data.currentTime) > 1) {
+        video.currentTime = data.currentTime;
+      }
+
+      if (data.isPlaying && video.paused) {
+        video.play().catch(console.error);
+      } else if (!data.isPlaying && !video.paused) {
+        video.pause();
       }
     });
 
   </script>
-
 </body>
 </html>
