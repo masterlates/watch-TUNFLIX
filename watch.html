@@ -22,85 +22,30 @@
   </div>
 
   <script type="module">
-    // ✅ بيانات الحلقات
+    // بيانات الحلقات
     const episodesData = [
-       {
-      id: 1,
-                title: "الحلقة 1",
-                baseURL: "https://video.wixstatic.com/video/a225c5_5be486adab444083b2323983d50c6efe/"
-            },
-            {
-                id: 2,
-                title: "الحلقة 2",
-                baseURL: "https://video.wixstatic.com/video/a225c5_a8805c5077e040ff85f935a3369364db/"
-            },
-            {
-                id: 3,
-                title: "الحلقة 3",
-                baseURL: "https://video.wixstatic.com/video/a225c5_33e21df5c0eb4565910ab444811127bc/"
-            },
-            {
-                id: 4,
-                title: "الحلقة 4",
-                baseURL: "https://video.wixstatic.com/video/a225c5_02e5b81878af4a67acb910870c2ba04e/"
-            },
-            {
-                id: 5,
-                title: "الحلقة 5",
-                baseURL: "https://video.wixstatic.com/video/a225c5_0bc2fafc235f47ddad2c158e308c5e32/"
-            },
-            {
-                id: 6,
-                title: "الحلقة 6 ",
-                baseURL: "https://video.wixstatic.com/video/a225c5_7d0de0cd771a4b93bced7c2e9f892f21/"
-         },
-          
-           {
-                id: 7,
-                title: "الحلقة 7 ",
-                baseURL: "https://video.wixstatic.com/video/a225c5_1d4b5b00855346468fdd30924155d32f/"
-          },
-             {
-                id: 8,
-                title: "الحلقة 8 ",
-                baseURL: "https://video.wixstatic.com/video/a225c5_41e3ee363e404859a32078355a333be4/"
-           },
-      
-       {
-                id: 9,
-                title: "الحلقة 9 ",
-                baseURL: "https://video.wixstatic.com/video/a225c5_3c8dfb5f9aa440dc816a1387e30c4bba/"
-          },
-      
-       {
-                id: 10,
-                title: "الحلقة 10 ",
-                baseURL: "https://video.wixstatic.com/video/a225c5_9ffccf7b0e4645aab85249b458a54162/"
-           },
-      
-       {
-                id: 11,
-                title: "الحلقة 11 ",
-                baseURL: "https://video.wixstatic.com/video/a225c5_4db82112a059421aabec23748da53abc/"
-          },
-      
-       {
-                id: 12,
-                title: "الحلقة 12 ",
-                baseURL: "https://video.wixstatic.com/video/a225c5_b78f6550286d4987bd819713492697f3/"
-            }
-       
-      // 🔑 أضف باقي الحلقات هنا حسب حاجتك
+      { id: 1, title: "الحلقة 1", baseURL: "https://video.wixstatic.com/video/a225c5_5be486adab444083b2323983d50c6efe/" },
+      { id: 2, title: "الحلقة 2", baseURL: "https://video.wixstatic.com/video/a225c5_a8805c5077e040ff85f935a3369364db/" },
+      { id: 3, title: "الحلقة 3", baseURL: "https://video.wixstatic.com/video/a225c5_33e21df5c0eb4565910ab444811127bc/" },
+      { id: 4, title: "الحلقة 4", baseURL: "https://video.wixstatic.com/video/a225c5_02e5b81878af4a67acb910870c2ba04e/" },
+      { id: 5, title: "الحلقة 5", baseURL: "https://video.wixstatic.com/video/a225c5_0bc2fafc235f47ddad2c158e308c5e32/" },
+      { id: 6, title: "الحلقة 6", baseURL: "https://video.wixstatic.com/video/a225c5_7d0de0cd771a4b93bced7c2e9f892f21/" },
+      { id: 7, title: "الحلقة 7", baseURL: "https://video.wixstatic.com/video/a225c5_1d4b5b00855346468fdd30924155d32f/" },
+      { id: 8, title: "الحلقة 8", baseURL: "https://video.wixstatic.com/video/a225c5_41e3ee363e404859a32078355a333be4/" },
+      { id: 9, title: "الحلقة 9", baseURL: "https://video.wixstatic.com/video/a225c5_3c8dfb5f9aa440dc816a1387e30c4bba/" },
+      { id: 10, title: "الحلقة 10", baseURL: "https://video.wixstatic.com/video/a225c5_9ffccf7b0e4645aab85249b458a54162/" },
+      { id: 11, title: "الحلقة 11", baseURL: "https://video.wixstatic.com/video/a225c5_4db82112a059421aabec23748da53abc/" },
+      { id: 12, title: "الحلقة 12", baseURL: "https://video.wixstatic.com/video/a225c5_b78f6550286d4987bd819713492697f3/" }
     ];
 
-    // ✅ توليد رابط mp4 حسب الجودة
+    // توليد رابط mp4 حسب الجودة
     function generateVideoUrl(baseURL, quality) {
       return `${baseURL}${quality}/mp4/file.mp4`;
     }
 
-    // ✅ إعداد Firebase
+    // إعداد Firebase
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
-    import { getDatabase, ref, onValue, update } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
+    import { getDatabase, ref, onValue, update, get, child } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyBNLxujMnCsvpsfzqqYMVR4l9dT4teu_b8",
@@ -114,7 +59,7 @@
     const app = initializeApp(firebaseConfig);
     const database = getDatabase(app);
 
-    // ✅ بيانات الغرفة من الرابط
+    // بيانات الغرفة من الرابط
     const urlParams = new URLSearchParams(window.location.search);
     const roomId = urlParams.get('room');
     const isHost = urlParams.get('host') === 'true';
@@ -128,7 +73,22 @@
       hostControls.style.display = 'none'; // إخفاء أزرار المستضيف للمشاهدين
     }
 
-    // ✅ المستضيف فقط: يرسل الحالة إلى Firebase
+    // تأكد من وجود الحلقة الحالية في Firebase أو تعيين الحلقة 1
+    get(child(roomRef, 'currentEpisode')).then(snapshot => {
+      if (!snapshot.exists()) {
+        update(roomRef, {
+          currentEpisode: 1,
+          currentTime: 0,
+          isPlaying: false,
+          quality: "720p"
+        });
+      }
+    });
+
+    // لمنع تحديث الوقت بشكل مفرط
+    let lastUpdateTime = 0;
+
+    // المستضيف فقط: يرسل الحالة إلى Firebase
     if (isHost) {
       video.addEventListener("play", () => {
         update(roomRef, { isPlaying: true });
@@ -139,11 +99,14 @@
       });
 
       video.addEventListener("timeupdate", () => {
-        update(roomRef, { currentTime: video.currentTime });
+        const now = Date.now();
+        if (now - lastUpdateTime > 1000) { // كل ثانية فقط
+          update(roomRef, { currentTime: video.currentTime });
+          lastUpdateTime = now;
+        }
       });
 
       nextEpisodeBtn.addEventListener("click", () => {
-        // مثال: الانتقال إلى الحلقة التالية
         const newEpisodeId = prompt("أدخل رقم الحلقة الجديدة:", "2");
         if (newEpisodeId) {
           update(roomRef, {
@@ -155,7 +118,7 @@
       });
     }
 
-    // ✅ المشاهدون: يستمعون للتغييرات من Firebase
+    // المشاهدون: يستمعون للتغييرات من Firebase
     onValue(roomRef, (snapshot) => {
       const data = snapshot.val();
       if (!data) return;
@@ -180,7 +143,6 @@
         video.pause();
       }
     });
-
   </script>
 </body>
 </html>
