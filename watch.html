@@ -43,7 +43,7 @@
       return `${baseURL}${quality}/mp4/file.mp4`;
     }
 
-    // إعداد Firebase
+    // استيراد Firebase
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
     import { getDatabase, ref, onValue, update, get, child } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
 
@@ -56,10 +56,11 @@
       messagingSenderId: "472062861048",
       appId: "1:472062861048:web:3710c75f6b72fef138e50d"
     };
+
     const app = initializeApp(firebaseConfig);
     const database = getDatabase(app);
 
-    // بيانات الغرفة من الرابط
+    // قراءة بيانات الغرفة من رابط الصفحة
     const urlParams = new URLSearchParams(window.location.search);
     const roomId = urlParams.get('room');
     const isHost = urlParams.get('host') === 'true';
@@ -70,10 +71,10 @@
     const hostControls = document.getElementById('hostControls');
 
     if (!isHost) {
-      hostControls.style.display = 'none'; // إخفاء أزرار المستضيف للمشاهدين
+      hostControls.style.display = 'none'; // إخفاء أزرار المستضيف عند المشاهدين
     }
 
-    // تأكد من وجود الحلقة الحالية في Firebase أو تعيين الحلقة 1
+    // ضبط الحلقة الحالية في Firebase إذا لم تكن موجودة
     get(child(roomRef, 'currentEpisode')).then(snapshot => {
       if (!snapshot.exists()) {
         update(roomRef, {
@@ -85,10 +86,10 @@
       }
     });
 
-    // لمنع تحديث الوقت بشكل مفرط
+    // لمنع إرسال تحديثات كثيرة للوقت
     let lastUpdateTime = 0;
 
-    // المستضيف فقط: يرسل الحالة إلى Firebase
+    // المستضيف: إرسال التحديثات عند التشغيل، الإيقاف، وتغيير الوقت
     if (isHost) {
       video.addEventListener("play", () => {
         update(roomRef, { isPlaying: true });
@@ -100,25 +101,28 @@
 
       video.addEventListener("timeupdate", () => {
         const now = Date.now();
-        if (now - lastUpdateTime > 1000) { // كل ثانية فقط
+        if (now - lastUpdateTime > 1000) { // تحديث كل ثانية
           update(roomRef, { currentTime: video.currentTime });
           lastUpdateTime = now;
         }
       });
 
       nextEpisodeBtn.addEventListener("click", () => {
-        const newEpisodeId = prompt("أدخل رقم الحلقة الجديدة:", "2");
-        if (newEpisodeId) {
+        let newEpisodeId = prompt("أدخل رقم الحلقة الجديدة:", "2");
+        newEpisodeId = parseInt(newEpisodeId, 10);
+        if (newEpisodeId && episodesData.some(ep => ep.id === newEpisodeId)) {
           update(roomRef, {
-            currentEpisode: parseInt(newEpisodeId, 10),
+            currentEpisode: newEpisodeId,
             currentTime: 0,
             isPlaying: false
           });
+        } else {
+          alert("رقم الحلقة غير صالح.");
         }
       });
     }
 
-    // المشاهدون: يستمعون للتغييرات من Firebase
+    // المشاهدون: استماع للتحديثات وتحديث الفيديو
     onValue(roomRef, (snapshot) => {
       const data = snapshot.val();
       if (!data) return;
@@ -133,6 +137,7 @@
         video.load();
       }
 
+      // مزامنة الوقت مع السماح بهامش صغير لتجنب الرجوع المتكرر
       if (Math.abs(video.currentTime - data.currentTime) > 1) {
         video.currentTime = data.currentTime;
       }
