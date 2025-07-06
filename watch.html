@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+  <meta charset="UTF-8" />
+  <title>مشاهدة جماعية مع الأصدقاء</title>
+  <style>
+    body {
+      margin: 0; padding: 0; background: #000; color: #fff; font-family: "Changa", sans-serif;
+      display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh;
+    }
+    video {
+      max-width: 90vw;
+      max-height: 80vh;
+      background: #000;
+    }
+  </style>
+
+  <!-- Firebase SDK (v8) -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+</head>
+<body>
+
+  <h2>مشاهدة جماعية مع الأصدقاء</h2>
+  <video id="player" controls></video>
+
+  <script>
+    // تكوين Firebase الخاص بك
+    var firebaseConfig = {
+      apiKey: "AIzaSyBNLxujMnCsvpsfzqqYMVR4l9dT4teu_b8",
+      authDomain: "watch-together-fa628.firebaseapp.com",
+      databaseURL: "https://watch-together-fa628-default-rtdb.europe-west1.firebasedatabase.app",
+      projectId: "watch-together-fa628",
+      storageBucket: "watch-together-fa628.appspot.com",
+      messagingSenderId: "472062861048",
+      appId: "1:472062861048:web:3710c75f6b72fef138e50d"
+    };
+    // تهيئة Firebase
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    // جلب بارامترات الرابط من URL (مثلاً ?room=abc123&video=رابط_الفيديو)
+    const params = new URLSearchParams(window.location.search);
+    const roomId = params.get('room');
+    const videoUrl = params.get('video');
+
+    if (!roomId || !videoUrl) {
+      alert("الرابط ناقص! يجب أن يحتوي على room و video.");
+      throw new Error("Missing room or video parameter");
+    }
+
+    const player = document.getElementById('player');
+    player.src = decodeURIComponent(videoUrl);
+
+    const roomRef = db.ref('rooms/' + roomId);
+
+    // تحديث حالة التشغيل
+    player.addEventListener('play', () => {
+      roomRef.update({ isPlaying: true });
+    });
+
+    player.addEventListener('pause', () => {
+      roomRef.update({ isPlaying: false });
+    });
+
+    // تحديث الوقت الحالي (كل 1 ثانية تقريبًا لتقليل الضغط)
+    let isSeeking = false;
+    player.addEventListener('seeking', () => {
+      isSeeking = true;
+    });
+
+    player.addEventListener('seeked', () => {
+      roomRef.update({ currentTime: player.currentTime });
+      isSeeking = false;
+    });
+
+    player.addEventListener('timeupdate', () => {
+      if (!isSeeking) {
+        roomRef.update({ currentTime: player.currentTime });
+      }
+    });
+
+    // الاستماع لتحديثات الحالة من Firebase
+    roomRef.on('value', snapshot => {
+      const data = snapshot.val();
+      if (!data) return;
+
+      // مزامنة التشغيل / الإيقاف
+      if (data.isPlaying !== undefined) {
+        if (data.isPlaying && player.paused) {
+          player.play();
+        } else if (!data.isPlaying && !player.paused) {
+          player.pause();
+        }
+      }
+
+      // مزامنة الوقت إذا الفارق أكبر من ثانية
+      if (data.currentTime !== undefined) {
+        const diff = Math.abs(player.currentTime - data.currentTime);
+        if (diff > 1) {
+          player.currentTime = data.currentTime;
+        }
+      }
+    });
+
+  </script>
+
+</body>
+</html>
