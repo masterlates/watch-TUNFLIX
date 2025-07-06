@@ -22,21 +22,8 @@
   </div>
 
   <script type="module">
-    // بيانات الحلقات
-    const episodesData = [
-      { id: 1, title: "الحلقة 1", baseURL: "https://video.wixstatic.com/video/a225c5_5be486adab444083b2323983d50c6efe/" },
-      { id: 2, title: "الحلقة 2", baseURL: "https://video.wixstatic.com/video/a225c5_a8805c5077e040ff85f935a3369364db/" },
-      { id: 3, title: "الحلقة 3", baseURL: "https://video.wixstatic.com/video/a225c5_33e21df5c0eb4565910ab444811127bc/" },
-      { id: 4, title: "الحلقة 4", baseURL: "https://video.wixstatic.com/video/a225c5_02e5b81878af4a67acb910870c2ba04e/" },
-      { id: 5, title: "الحلقة 5", baseURL: "https://video.wixstatic.com/video/a225c5_0bc2fafc235f47ddad2c158e308c5e32/" },
-      { id: 6, title: "الحلقة 6", baseURL: "https://video.wixstatic.com/video/a225c5_7d0de0cd771a4b93bced7c2e9f892f21/" },
-      { id: 7, title: "الحلقة 7", baseURL: "https://video.wixstatic.com/video/a225c5_1d4b5b00855346468fdd30924155d32f/" },
-      { id: 8, title: "الحلقة 8", baseURL: "https://video.wixstatic.com/video/a225c5_41e3ee363e404859a32078355a333be4/" },
-      { id: 9, title: "الحلقة 9", baseURL: "https://video.wixstatic.com/video/a225c5_3c8dfb5f9aa440dc816a1387e30c4bba/" },
-      { id: 10, title: "الحلقة 10", baseURL: "https://video.wixstatic.com/video/a225c5_9ffccf7b0e4645aab85249b458a54162/" },
-      { id: 11, title: "الحلقة 11", baseURL: "https://video.wixstatic.com/video/a225c5_4db82112a059421aabec23748da53abc/" },
-      { id: 12, title: "الحلقة 12", baseURL: "https://video.wixstatic.com/video/a225c5_b78f6550286d4987bd819713492697f3/" }
-    ];
+
+    let episodesData = [];
 
     // توليد رابط mp4 حسب الجودة
     function generateVideoUrl(baseURL, quality) {
@@ -74,80 +61,119 @@
       hostControls.style.display = 'none'; // إخفاء أزرار المستضيف عند المشاهدين
     }
 
-    // ضبط الحلقة الحالية في Firebase إذا لم تكن موجودة
-    get(child(roomRef, 'currentEpisode')).then(snapshot => {
-      if (!snapshot.exists()) {
-        update(roomRef, {
-          currentEpisode: 1,
-          currentTime: 0,
-          isPlaying: false,
-          quality: "720p"
-        });
+    // دالة لجلب بيانات الحلقات من صفحة بلوجر HTML
+    async function fetchEpisodesFromBlogger() {
+      try {
+        const response = await fetch('https://tun-flix.blogspot.com/p/blog-page.html');  // غير الرابط لرابط صفحة الحلقات لديك في بلوجر
+        const text = await response.text();
+
+        // تحويل نص HTML إلى DOM
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(text, 'text/html');
+
+        // افترض أن الحلقات في عنصر UL له id="episodesList" وكل LI يحتوي بيانات الحلقة
+        const listItems = doc.querySelectorAll('#episodesList li');
+
+        episodesData = Array.from(listItems).map(li => ({
+          id: parseInt(li.dataset.id),
+          title: li.textContent.trim(),
+          baseURL: li.dataset.baseurl
+        }));
+
+        console.log('تم تحميل بيانات الحلقات:', episodesData);
+
+        // بعد تحميل الحلقات ابدأ مزامنة الفيديو
+        startWatching();
+
+      } catch (error) {
+        console.error('فشل تحميل بيانات الحلقات من بلوجر:', error);
+        alert('حدث خطأ أثناء تحميل بيانات الحلقات.');
       }
-    });
-
-    // لمنع إرسال تحديثات كثيرة للوقت
-    let lastUpdateTime = 0;
-
-    // المستضيف: إرسال التحديثات عند التشغيل، الإيقاف، وتغيير الوقت
-    if (isHost) {
-      video.addEventListener("play", () => {
-        update(roomRef, { isPlaying: true });
-      });
-
-      video.addEventListener("pause", () => {
-        update(roomRef, { isPlaying: false });
-      });
-
-      video.addEventListener("timeupdate", () => {
-        const now = Date.now();
-        if (now - lastUpdateTime > 1000) { // تحديث كل ثانية
-          update(roomRef, { currentTime: video.currentTime });
-          lastUpdateTime = now;
-        }
-      });
-
-      nextEpisodeBtn.addEventListener("click", () => {
-        let newEpisodeId = prompt("أدخل رقم الحلقة الجديدة:", "2");
-        newEpisodeId = parseInt(newEpisodeId, 10);
-        if (newEpisodeId && episodesData.some(ep => ep.id === newEpisodeId)) {
-          update(roomRef, {
-            currentEpisode: newEpisodeId,
-            currentTime: 0,
-            isPlaying: false
-          });
-        } else {
-          alert("رقم الحلقة غير صالح.");
-        }
-      });
     }
 
-    // المشاهدون: استماع للتحديثات وتحديث الفيديو
-    onValue(roomRef, (snapshot) => {
-      const data = snapshot.val();
-      if (!data) return;
+    // الوظيفة التي تحتوي على منطق المشاهدة والمزامنة مع Firebase
+    function startWatching() {
 
-      const episode = episodesData.find(ep => ep.id === data.currentEpisode);
-      if (!episode) return;
+      // ضبط الحلقة الحالية في Firebase إذا لم تكن موجودة
+      get(child(roomRef, 'currentEpisode')).then(snapshot => {
+        if (!snapshot.exists()) {
+          update(roomRef, {
+            currentEpisode: 1,
+            currentTime: 0,
+            isPlaying: false,
+            quality: "720p"
+          });
+        }
+      });
 
-      const videoUrl = generateVideoUrl(episode.baseURL, data.quality || "720p");
+      // لمنع إرسال تحديثات كثيرة للوقت
+      let lastUpdateTime = 0;
 
-      if (video.src !== videoUrl) {
-        video.src = videoUrl;
-        video.load();
+      // المستضيف: إرسال التحديثات عند التشغيل، الإيقاف، وتغيير الوقت
+      if (isHost) {
+        video.addEventListener("play", () => {
+          update(roomRef, { isPlaying: true });
+        });
+
+        video.addEventListener("pause", () => {
+          update(roomRef, { isPlaying: false });
+        });
+
+        video.addEventListener("timeupdate", () => {
+          const now = Date.now();
+          if (now - lastUpdateTime > 1000) { // تحديث كل ثانية
+            update(roomRef, { currentTime: video.currentTime });
+            lastUpdateTime = now;
+          }
+        });
+
+        nextEpisodeBtn.addEventListener("click", () => {
+          let newEpisodeId = prompt("أدخل رقم الحلقة الجديدة:", "2");
+          newEpisodeId = parseInt(newEpisodeId, 10);
+          if (newEpisodeId && episodesData.some(ep => ep.id === newEpisodeId)) {
+            update(roomRef, {
+              currentEpisode: newEpisodeId,
+              currentTime: 0,
+              isPlaying: false
+            });
+          } else {
+            alert("رقم الحلقة غير صالح.");
+          }
+        });
       }
 
-      // مزامنة الوقت مع السماح بهامش صغير لتجنب الرجوع المتكرر
-      if (Math.abs(video.currentTime - data.currentTime) > 1) {
-        video.currentTime = data.currentTime;
-      }
+      // المشاهدون: استماع للتحديثات وتحديث الفيديو
+      onValue(roomRef, (snapshot) => {
+        const data = snapshot.val();
+        if (!data) return;
 
-      if (data.isPlaying && video.paused) {
-        video.play().catch(console.error);
-      } else if (!data.isPlaying && !video.paused) {
-        video.pause();
-      }
-    });
+        const episode = episodesData.find(ep => ep.id === data.currentEpisode);
+        if (!episode) return;
+
+        const videoUrl = generateVideoUrl(episode.baseURL, data.quality || "720p");
+
+        if (video.src !== videoUrl) {
+          video.src = videoUrl;
+          video.load();
+        }
+
+        // مزامنة الوقت مع السماح بهامش صغير لتجنب الرجوع المتكرر
+        if (Math.abs(video.currentTime - data.currentTime) > 1) {
+          video.currentTime = data.currentTime;
+        }
+
+        if (data.isPlaying && video.paused) {
+          video.play().catch(console.error);
+        } else if (!data.isPlaying && !video.paused) {
+          video.pause();
+        }
+      });
+
+    }
+
+    // استدعاء تحميل بيانات الحلقات من بلوجر
+    fetchEpisodesFromBlogger();
+
   </script>
 </body>
 </html>
