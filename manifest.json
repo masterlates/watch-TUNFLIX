@@ -1,0 +1,15 @@
+{
+  "name": "TUNFLIX ",
+  "short_name": "TUNFLIX ",
+  "start_url": "https://tun-flix.blogspot.com/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#4facfe",
+  "icons": [
+    {
+      "src": "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjqiWcnwv7caogKUOmIUnWJ15CZHbe4H0Wzz_KPssGLF7dg1SDW2jv64ARTRr6vhVNgq5h8lzVsPrKbOQe8A-vZzf0_iiHzziNQUd-aK1BiVaoZ9sqv9BxpkWKGJ-VuhWCRrXYPeN-MRXxh-NMkhqjt9ko1kekFlXUG2a1gUFGzeU1OP4TJOwJRzwx3RJc0/s1600/icone.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
